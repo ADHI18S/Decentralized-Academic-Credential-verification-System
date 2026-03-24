@@ -1,0 +1,98 @@
+{% set site_name = "⚙️ System Admin Portal" %}
+{% set home_url = "/admin/dashboard" %}
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="card" style="max-width: 850px; margin: 0 auto;">
+    <h2>Master Admin Dashboard</h2>
+    <p>Manage the entire university verification ecosystem from here.</p>
+    
+    {% if message %}
+        <div class="result-box result-success" style="margin-top: 0; margin-bottom: 30px;">
+            ✅ {{ message }}
+        </div>
+    {% endif %}
+    {% if error %}
+        <div class="result-box result-error" style="margin-top: 0; margin-bottom: 30px;">
+            ❌ {{ error }}
+        </div>
+    {% endif %}
+
+    <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+        <!-- Left Column: Operations -->
+        <div style="flex: 1; min-width: 320px;">
+            
+            <!-- Create User Form -->
+            <div style="background: rgba(0,0,0,0.1); padding: 25px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 20px;">
+                <h3 style="margin-top: 0; font-size: 1.15rem; color: #93c5fd;">➕ Create University Admin</h3>
+                <form method="POST" action="/admin/dashboard">
+                    <input type="hidden" name="action" value="create">
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <input type="text" name="new_username" placeholder="New Username" required style="padding: 10px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <input type="password" name="new_password" placeholder="New Password" required style="padding: 10px;">
+                    </div>
+                    <button type="submit" class="btn btn-blue" style="padding: 10px 15px; font-size: 0.9rem;">Grant Access</button>
+                </form>
+            </div>
+
+            <!-- Change Password Form -->
+            <div style="background: rgba(0,0,0,0.1); padding: 25px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left;">
+                <h3 style="margin-top: 0; font-size: 1.15rem; color: #fbbf24;">🔑 Override Password</h3>
+                <form method="POST" action="/admin/dashboard">
+                    <input type="hidden" name="action" value="change_password">
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <select name="target_user_id" required style="width: 100%; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-main); outline: none;">
+                            <option value="" disabled selected>Select User</option>
+                            {% for user in users %}
+                                <option value="{{ user.id }}" style="color: black;">{{ user.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <input type="password" name="updated_password" placeholder="Type new password" required style="padding: 10px;">
+                    </div>
+                    <!-- Override specific button color to yellow -->
+                    <button type="submit" class="btn btn-blue" style="background: #ca8a04; padding: 10px 15px; font-size: 0.9rem;">Update Password</button>
+                </form>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Database View -->
+        <div style="flex: 1; min-width: 320px; text-align: left;">
+            <div style="background: rgba(0,0,0,0.1); padding: 25px; border-radius: 12px; border: 1px solid var(--glass-border); height: 100%; box-sizing: border-box;">
+                <h3 style="margin-top: 0; font-size: 1.15rem;">Authorized Accounts</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">Delete or view existing accounts.</p>
+                
+                {% if users %}
+                    <ul style="list-style: none; padding: 0; margin: 0;">
+                    {% for user in users %}
+                        <li style="padding: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                            <div>
+                                <span style="font-weight: 500; font-size: 0.9rem;">👤 {{ user.username }}</span>
+                            </div>
+                            
+                            <!-- Delete Form (Small Red Button) -->
+                            <form method="POST" action="/admin/dashboard" style="margin: 0;" onsubmit="return confirm('WARNING: Are you sure you want to completely delete {{ user.username }}? They will immediately lose access to the system. This cannot be undone.');">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="delete_user_id" value="{{ user.id }}">
+                                <button type="submit" style="background: transparent; border: 1px solid #ef4444; color: #ef4444; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.8rem; transition: background 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)'" onmouseout="this.style.background='transparent'">Delete</button>
+                            </form>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                {% else %}
+                    <p style="font-size: 0.9rem; color: #ef4444;">No university users exist. Entire system locked.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Actions -->
+    <div style="margin-top: 40px; border-top: 1px solid var(--glass-border); padding-top: 25px;">
+        <a href="/admin/logout" class="btn btn-back" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">⏏ Close Secure Session</a>
+    </div>
+</div>
+{% endblock %}

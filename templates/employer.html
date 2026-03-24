@@ -1,0 +1,40 @@
+{% set site_name = "🏢 Employer Verification" %}
+{% set home_url = "/employer" %}
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="card">
+    <h2>Employer Verification Portal</h2>
+    <p>Upload a candidate's certificate. The system will independently run the SHA-256 algorithm and match it against the immutable ledger.</p>
+    
+    <form method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="certificate">Upload Candidate Certificate</label>
+            <input type="file" id="certificate" name="certificate" required>
+        </div>
+        
+        <button type="submit" class="btn btn-green">Verify Authenticity</button>
+    </form>
+    
+    {% if valid_message %}
+        <div class="result-box result-success">
+            <h2>✅ VALID</h2>
+            This is an authentic certificate belonging to <strong>{{ student_name }}</strong>.<br>
+            The hash perfectly matches the ledger. No tampering detected.
+        </div>
+    {% endif %}
+    
+    {% if fake_message %}
+        <div class="result-box result-error">
+            <h2>❌ FAKE DETECTED</h2>
+            This certificate has been altered, forged, or does not exist in our system.<br>
+            The hash generated from this file is unknown.
+        </div>
+    {% endif %}
+    
+    <div style="margin-top: 30px;">
+        <a href="/employer" class="btn btn-back">⟳ Try Another Certificate</a>
+        <a href="/" class="btn btn-back" style="margin-left: 10px;">← Main App Directory</a>
+    </div>
+</div>
+{% endblock %}

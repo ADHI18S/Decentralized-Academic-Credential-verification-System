@@ -1,0 +1,45 @@
+{% set site_name = "🏛️ University Portal" %}
+{% set home_url = "/university/upload" %}
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 10px;">
+        <h2 style="margin-bottom: 0;">University Issuance Form</h2>
+        <span style="font-size: 0.85rem; color: #93c5fd; background: rgba(59, 130, 246, 0.2); padding: 6px 14px; border-radius: 20px; font-weight: 500;">👤 Admin: {{ username }}</span>
+    </div>
+    <p style="margin-top: 15px;">Issue a new certificate. A SHA-256 fingerprint will be generated and stored on the immutable ledger.</p>
+    
+    <form method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="student_name">Student Full Name</label>
+            <input type="text" id="student_name" name="student_name" placeholder="E.g. Jane Doe" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="certificate">Certificate Document (PDF / DOC)</label>
+            <input type="file" id="certificate" name="certificate" required>
+        </div>
+        
+        <button type="submit" class="btn btn-blue">Issue & Hash Certificate</button>
+    </form>
+    
+    {% if message %}
+        <div class="result-box result-success">
+            <strong>✅ Success!</strong><br><br>
+            {{ message }}
+        </div>
+    {% endif %}
+    {% if error %}
+        <div class="result-box result-error">
+            <strong>❌ Issuance Error</strong><br><br>
+            {{ error }}
+        </div>
+    {% endif %}
+    
+    <div style="margin-top: 30px;">
+        <a href="/university/upload" class="btn btn-back" style="margin-right: 15px;">⟳ Upload Next</a>
+        <a href="/university/logout" class="btn btn-back" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">⏏ Logout Session</a>
+    </div>
+</div>
+{% endblock %}

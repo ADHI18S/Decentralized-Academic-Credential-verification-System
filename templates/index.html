@@ -1,0 +1,31 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="card">
+    <h2>Decentralized Credential Verification</h2>
+    <p>A secure, tamper-proof system built on cryptographic hashing principles. Issue and verify academic credentials with absolute authenticity.</p>
+    
+    <!-- Directory portal buttons -->
+    <div style="display: flex; gap: 20px; text-align: left; margin-top: 35px; flex-wrap: wrap;">
+        
+        <!-- Public/Employer Front -->
+        <div style="flex: 1; min-width: 250px; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); padding: 25px; border-radius: 15px; display: flex; flex-direction: column;">
+            <h3 style="margin-top: 0; color: #34d399; font-size: 1.25rem;">🏢 Employer Portal</h3>
+            <p style="font-size: 0.95rem; margin-bottom: 20px; flex-grow: 1;">Publicly verify academic credentials to ensure zero tampering. Open to all public users to verify file authenticity against the blockchain.</p>
+            <a href="/employer" class="btn btn-green" style="width: 100%; text-align: center; margin-top: auto;">Open Employer Interface</a>
+        </div>
+
+        <!-- University Admin Front -->
+        <div style="flex: 1; min-width: 250px; background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.2); padding: 25px; border-radius: 15px; display: flex; flex-direction: column;">
+            <h3 style="margin-top: 0; color: #93c5fd; font-size: 1.25rem;">🏛️ University Portal</h3>
+            <p style="font-size: 0.95rem; margin-bottom: 20px; flex-grow: 1;">Authorized issuers can securely digitally hash new certificates. Access completely bounded by admin-generated credentials.</p>
+            <a href="/university/login" class="btn btn-blue" style="width: 100%; text-align: center; margin-top: auto;">Open University Interface</a>
+        </div>
+    </div>
+    
+    <!-- Secret Admin link, separated from main UX flows -->
+    <div style="margin-top: 40px; font-size: 0.85rem;">
+        <a href="/admin/login" style="color: var(--text-muted); text-decoration: underline;">Open Systems Administrator Interface</a>
+    </div>
+</div>
+{% endblock %}
