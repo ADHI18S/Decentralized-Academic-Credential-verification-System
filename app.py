@@ -114,16 +114,16 @@ def employeer_verification():
 @app.route('/university/login', methods=['GET', 'POST'])
 def university_login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form['username'].strip().lower()
+        password = request.form['password'].strip()
         
         conn = get_db_connection()
-        user = conn.execute("SELECT * FROM university_users WHERE username = ?", (username,)).fetchone()
+        user = conn.execute("SELECT * FROM university_users WHERE LOWER(username) = ?", (username,)).fetchone()
         conn.close()
         
         if user and check_password_hash(user['password_hash'], password):
             session['uni_logged_in'] = True
-            session['uni_username'] = username
+            session['uni_username'] = user['username']
             return redirect(url_for('university_upload'))
         else:
             return render_template('login.html', error="Invalid University Credentials", portal="University Portal", action_url=url_for('university_login'), site_name="🏛️ University Portal", home_url="/university/login")
@@ -187,10 +187,11 @@ def university_upload():
                     (student_name, department, register_number, passed_out_year, certificate_type, file_hash, cert_id, db_qr_path)
                 )
                 conn.commit()
-                conn.close()
                 msg = f"Certificate for {student_name} uploaded successfully! ID: {cert_id}"
+                conn.close()
                 return render_template('upload.html', message=msg, username=session.get('uni_username'), departments=departments, new_qr=db_qr_path, new_cert_id=cert_id, student_name=student_name, department=department, register_number=register_number, passed_out_year=passed_out_year)
             except sqlite3.IntegrityError:
+                conn.close()
                 err = "This exact certificate was already uploaded! Duplicate hashes are not allowed."
                 return render_template('upload.html', error=err, username=session.get('uni_username'), departments=departments)
                 
@@ -223,6 +224,7 @@ def add_department():
                 conn.close()
                 msg = f"Department '{dept_name}' successfully added to the system."
             except sqlite3.IntegrityError:
+                conn.close()
                 err = "This department already exists."
                 
     return render_template('add_department.html', username=session.get('uni_username'), message=msg, error=err)
@@ -275,8 +277,8 @@ def admin():
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form['username'].strip()
+        password = request.form['password'].strip()
         
         if username == SUPERADMIN_USERNAME and password == SUPERADMIN_PASSWORD:
             session['admin_logged_in'] = True
@@ -309,6 +311,8 @@ def admin_dashboard():
             new_username = request.form.get('new_username')
             new_password = request.form.get('new_password')
             if new_username and new_password:
+                new_username = new_username.strip().lower()
+                new_password = new_password.strip()
                 hashed_pw = generate_password_hash(new_password)
                 try:
                     conn.execute("INSERT INTO university_users (username, password_hash) VALUES (?, ?)", (new_username, hashed_pw))
