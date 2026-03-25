@@ -1,6 +1,8 @@
 import os
 import hashlib
 import sqlite3
+import uuid
+import qrcode
 from flask import Flask, render_template, request, session, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -31,7 +33,20 @@ def init_db():
         CREATE TABLE IF NOT EXISTS certificates (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             student_name TEXT,
-            file_hash TEXT UNIQUE
+            department TEXT,
+            register_number TEXT,
+            passed_out_year TEXT,
+            certificate_type TEXT,
+            file_hash TEXT UNIQUE,
+            certificate_id TEXT,
+            qr_code_path TEXT
+        )
+    ''')
+    # Table for Departments
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS departments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE
         )
     ''')
     # Table for University Admins
@@ -67,19 +82,28 @@ def home():
 @app.route('/employer', methods=['GET', 'POST'])
 def employeer_verification():
     if request.method == 'POST':
-        file = request.files['certificate']
-        if file:
+        cert_id = request.form.get('cert_id')
+        file = request.files.get('certificate')
+        
+        conn = get_db_connection()
+        result = None
+        
+        if cert_id:
+            # QR Scan validation
+            result = conn.execute("SELECT * FROM certificates WHERE certificate_id = ?", (cert_id,)).fetchone()
+            
+        if not result and file and file.filename:
+            # File Hash validation fallback
             file_data = file.read()
             uploaded_hash = generate_hash(file_data)
+            result = conn.execute("SELECT * FROM certificates WHERE file_hash = ?", (uploaded_hash,)).fetchone()
             
-            conn = get_db_connection()
-            result = conn.execute("SELECT student_name FROM certificates WHERE file_hash = ?", (uploaded_hash,)).fetchone()
-            conn.close()
-            
-            if result:
-                return render_template('employer.html', valid_message=True, student_name=result['student_name'])
-            else:
-                return render_template('employer.html', fake_message=True)
+        conn.close()
+        
+        if result:
+            return render_template('employer.html', valid_message=True, cert=result)
+        else:
+            return render_template('employer.html', fake_message=True)
                 
     return render_template('employer.html')
 
@@ -118,8 +142,16 @@ def university_upload():
     if not session.get('uni_logged_in'):
         return redirect(url_for('university_login'))
         
+    conn = get_db_connection()
+    departments = conn.execute("SELECT name FROM departments ORDER BY name").fetchall()
+    conn.close()
+        
     if request.method == 'POST':
         student_name = request.form['student_name']
+        department = request.form['department']
+        register_number = request.form['register_number']
+        passed_out_year = request.form['passed_out_year']
+        certificate_type = request.form['certificate_type']
         file = request.files['certificate']
         
         if file:
@@ -133,23 +165,113 @@ def university_upload():
             # Generate SHA-256 Hash
             file_hash = generate_hash(file_data)
             
+            # Generate Certificate ID and QR Code payload
+            cert_id = f"ACVS-{passed_out_year}-{uuid.uuid4().hex[:6].upper()}"
+            qr_folder = os.path.join(app.root_path, 'static', 'qrcodes')
+            os.makedirs(qr_folder, exist_ok=True)
+            qr_filename = f"{cert_id}.png"
+            qr_path = os.path.join(qr_folder, qr_filename)
+            
+            qr = qrcode.QRCode(version=1, box_size=10, border=4)
+            qr.add_data(cert_id)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="black", back_color="white")
+            img.save(qr_path)
+            
+            db_qr_path = f"qrcodes/{qr_filename}"
+            
             try:
                 conn = get_db_connection()
-                conn.execute("INSERT INTO certificates (student_name, file_hash) VALUES (?, ?)", (student_name, file_hash))
+                conn.execute(
+                    "INSERT INTO certificates (student_name, department, register_number, passed_out_year, certificate_type, file_hash, certificate_id, qr_code_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (student_name, department, register_number, passed_out_year, certificate_type, file_hash, cert_id, db_qr_path)
+                )
                 conn.commit()
                 conn.close()
-                msg = f"Certificate for {student_name} uploaded successfully! Hash generated: {file_hash}"
-                return render_template('upload.html', message=msg, username=session.get('uni_username'))
+                msg = f"Certificate for {student_name} uploaded successfully! ID: {cert_id}"
+                return render_template('upload.html', message=msg, username=session.get('uni_username'), departments=departments, new_qr=db_qr_path, new_cert_id=cert_id, student_name=student_name, department=department, register_number=register_number, passed_out_year=passed_out_year)
             except sqlite3.IntegrityError:
                 err = "This exact certificate was already uploaded! Duplicate hashes are not allowed."
-                return render_template('upload.html', error=err, username=session.get('uni_username'))
+                return render_template('upload.html', error=err, username=session.get('uni_username'), departments=departments)
                 
-    return render_template('upload.html', username=session.get('uni_username'))
+    return render_template('upload.html', username=session.get('uni_username'), departments=departments)
 
 
 # ==========================================
 # MASTER ADMIN ROUTES (Manage Universities)
 # ==========================================
+@app.route('/university/about')
+def university_about():
+    if not session.get('uni_logged_in'):
+        return redirect(url_for('university_login'))
+    return render_template('uni_about.html', username=session.get('uni_username'))
+
+@app.route('/university/add-department', methods=['GET', 'POST'])
+def add_department():
+    if not session.get('uni_logged_in'):
+        return redirect(url_for('university_login'))
+    
+    msg = None
+    err = None
+    if request.method == 'POST':
+        dept_name = request.form.get('department_name')
+        if dept_name:
+            try:
+                conn = get_db_connection()
+                conn.execute("INSERT INTO departments (name) VALUES (?)", (dept_name,))
+                conn.commit()
+                conn.close()
+                msg = f"Department '{dept_name}' successfully added to the system."
+            except sqlite3.IntegrityError:
+                err = "This department already exists."
+                
+    return render_template('add_department.html', username=session.get('uni_username'), message=msg, error=err)
+
+@app.route('/university/students', methods=['GET'])
+def university_students():
+    if not session.get('uni_logged_in'):
+        return redirect(url_for('university_login'))
+        
+    year = request.args.get('year')
+    dept = request.args.get('department')
+    
+    conn = get_db_connection()
+    departments = conn.execute("SELECT name FROM departments ORDER BY name").fetchall()
+    
+    has_searched = ('year' in request.args or 'department' in request.args)
+    
+    query = "SELECT * FROM certificates WHERE 1=1"
+    params = []
+    
+    if year:
+        query += " AND passed_out_year = ?"
+        params.append(year)
+    if dept:
+        query += " AND department = ?"
+        params.append(dept)
+        
+    students = []
+    if has_searched:
+        students = conn.execute(query, params).fetchall()
+    conn.close()
+    
+    return render_template('uni_students.html', username=session.get('uni_username'), departments=departments, students=students, selected_year=year, selected_dept=dept, has_searched=has_searched)
+
+@app.route('/university/qrcodes', methods=['GET'])
+def university_qrcodes():
+    if not session.get('uni_logged_in'):
+        return redirect(url_for('university_login'))
+        
+    conn = get_db_connection()
+    certificates = conn.execute("SELECT * FROM certificates WHERE qr_code_path IS NOT NULL ORDER BY id DESC").fetchall()
+    conn.close()
+    
+    return render_template('uni_qrcodes.html', username=session.get('uni_username'), certificates=certificates)
+
+@app.route('/admin')
+def admin():
+    return redirect(url_for('admin_login'))
+
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':

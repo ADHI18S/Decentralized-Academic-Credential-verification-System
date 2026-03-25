@@ -1,0 +1,33 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="mb-4">
+    <h2 class="section-title" style="font-size: 2rem;">Platform Overview</h2>
+    <p class="section-subtitle" style="margin-left: 0; margin-bottom: 30px;">Learn more about the infrastructure supporting the Academic Credential Verification System.</p>
+</div>
+
+<div class="card xl">
+    <h3 style="margin-bottom: 20px; font-size: 1.5rem;">Secure Ledger Architecture</h3>
+    <p style="text-align: left; margin-bottom: 20px; font-size: 1.05rem;">
+        Welcome to your authorized University issuance instance. This tool utilizes strict SHA-256 cryptographic hashing methodologies to conclusively ensure certificates cannot be forged or altered by external parties post-issuance. 
+    </p>
+    <p style="text-align: left; margin-bottom: 40px; font-size: 1.05rem;">
+        Unlike decentralized public chains subject to extreme volatility, ACVS uses deterministic centralized ledgers equipped securely under administrative guardrails. It empowers universities with total control, eliminating paper-fraud permanently.
+    </p>
+
+    <div class="dashboard-cards-grid mt-4">
+        <div class="dashboard-card gradient-1" style="text-align: left; padding: 30px;">
+            <h3>🔒 Immutable Tech</h3>
+            <p style="margin-top: 10px;">Cryptographic hashes mapping strictly to PDF bytes cannot be mathematically reversed or manually tampered with.</p>
+        </div>
+        <div class="dashboard-card gradient-2" style="text-align: left; padding: 30px;">
+            <h3>⚡ Lightning Fast Lookup</h3>
+            <p style="margin-top: 10px;">Verification operations occur in milliseconds, providing employers with absolute immediate ground-truth capabilities.</p>
+        </div>
+        <div class="dashboard-card gradient-3" style="text-align: left; padding: 30px;">
+            <h3>📊 Enterprise Autonomy</h3>
+            <p style="margin-top: 10px;">Manage dynamic organizational structures effortlessly. Support tens of thousands of secure departments simultaneously.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

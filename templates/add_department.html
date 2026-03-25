@@ -1,0 +1,37 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="mb-4">
+    <h2 class="section-title" style="font-size: 2rem;">Manage Departments</h2>
+    <p class="section-subtitle" style="margin-left: 0; margin-bottom: 30px;">Configure the allowed department nomenclature strictly for certificate issuance.</p>
+</div>
+
+<div class="card mx-auto">
+    <div class="flex-between mb-4">
+        <h3>Add New Department</h3>
+        <span class="badge-pill" style="background: var(--gradient-btn); color: white;">Global Variable</span>
+    </div>
+    
+    <form method="POST">
+        <div class="form-group text-left mt-4" style="margin-bottom: 30px;">
+            <label for="department_name">Official Department Name</label>
+            <input type="text" id="department_name" name="department_name" placeholder="E.g. Artificial Intelligence & Data Science" required>
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-w-full"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Register Department</button>
+    </form>
+    
+    {% if message %}
+        <div class="result-box result-success">
+            <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Success</h3>
+            <span>{{ message }}</span>
+        </div>
+    {% endif %}
+    {% if error %}
+        <div class="result-box result-error">
+            <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line></svg> Error</h3>
+            <span>{{ error }}</span>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

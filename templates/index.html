@@ -1,31 +1,188 @@
-{% extends 'layout.html' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Credential Verification System</title>
+    <!-- New Dedicated Commercial CSS -->
+    <link href="{{ url_for('static', filename='home.css') }}" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
 
-{% block content %}
-<div class="card">
-    <h2>Decentralized Credential Verification</h2>
-    <p>A secure, tamper-proof system built on cryptographic hashing principles. Issue and verify academic credentials with absolute authenticity.</p>
-    
-    <!-- Directory portal buttons -->
-    <div style="display: flex; gap: 20px; text-align: left; margin-top: 35px; flex-wrap: wrap;">
-        
-        <!-- Public/Employer Front -->
-        <div style="flex: 1; min-width: 250px; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); padding: 25px; border-radius: 15px; display: flex; flex-direction: column;">
-            <h3 style="margin-top: 0; color: #34d399; font-size: 1.25rem;">🏢 Employer Portal</h3>
-            <p style="font-size: 0.95rem; margin-bottom: 20px; flex-grow: 1;">Publicly verify academic credentials to ensure zero tampering. Open to all public users to verify file authenticity against the blockchain.</p>
-            <a href="/employer" class="btn btn-green" style="width: 100%; text-align: center; margin-top: auto;">Open Employer Interface</a>
+    <!-- 1. Modern Navbar -->
+    <nav class="navbar">
+        <div class="content-wrapper nav-container">
+            <div class="logo">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="url(#logoGradient)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <defs>
+                        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#3b82f6" />
+                            <stop offset="100%" stop-color="#8b5cf6" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                    <path d="M2 17l10 5 10-5"></path>
+                    <path d="M2 12l10 5 10-5"></path>
+                </svg>
+                <span class="logo-text">Academic Credential Verification System</span>
+                <span class="logo-text-mobile">ACVS</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/university/login">University Login</a></li>
+                <li><a href="/employer">Verify Certificate</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
         </div>
+    </nav>
 
-        <!-- University Admin Front -->
-        <div style="flex: 1; min-width: 250px; background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.2); padding: 25px; border-radius: 15px; display: flex; flex-direction: column;">
-            <h3 style="margin-top: 0; color: #93c5fd; font-size: 1.25rem;">🏛️ University Portal</h3>
-            <p style="font-size: 0.95rem; margin-bottom: 20px; flex-grow: 1;">Authorized issuers can securely digitally hash new certificates. Access completely bounded by admin-generated credentials.</p>
-            <a href="/university/login" class="btn btn-blue" style="width: 100%; text-align: center; margin-top: auto;">Open University Interface</a>
+    <main>
+        <!-- 2. Hero Section -->
+        <section class="hero-section">
+            <div class="content-wrapper hero-container">
+                <div class="hero-text">
+                    <h1>Secure and Instant Academic Certificate Verification</h1>
+                    <p>Empowering universities and employers with cryptographic hashing. Ensuring zero tampering and 100% authenticity for academic credentials globally.</p>
+                    <div class="hero-buttons">
+                        <a href="/university/login" class="btn btn-primary-gradient">University Login</a>
+                        <a href="/employer" class="btn btn-secondary-outline">Verify Certificate</a>
+                    </div>
+                </div>
+                <div class="hero-illustration">
+                    <div class="illustration-card glow-blue">
+                        <div class="doc-header"></div>
+                        <div class="doc-line w-full"></div>
+                        <div class="doc-line w-3-4"></div>
+                        <div class="doc-line w-half"></div>
+                        <div class="doc-line w-full" style="margin-top: 20px;"></div>
+                        <div class="doc-line w-3-4"></div>
+                        <div class="shield-badge">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                <polyline points="9 12 11 14 15 10"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-shape"></div>
+        </section>
+
+        <!-- 3. Features Section -->
+        <section id="about" class="features-section">
+            <div class="content-wrapper text-center">
+                <h2 class="section-title">Enterprise-Grade Features</h2>
+                <p class="section-subtitle">A highly secure product architecture designed to completely eliminate identity fraud.</p>
+                
+                <div class="features-grid">
+                    <div class="feature-card gradient-1">
+                        <div class="icon-circle">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        </div>
+                        <h3>Secure Certificate Upload</h3>
+                        <p>Universities securely index credentials using authorized accounts, establishing immutable records.</p>
+                    </div>
+
+                    <div class="feature-card gradient-2">
+                        <div class="icon-circle">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        </div>
+                        <h3>Instant Verification</h3>
+                        <p>Employers achieve split-second authenticity verification without waiting for administrative delays.</p>
+                    </div>
+
+                    <div class="feature-card gradient-3">
+                        <div class="icon-circle">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        </div>
+                        <h3>Tamper-proof Protection</h3>
+                        <p>Powered by SHA-256 cryptographic footprints, detecting even a single pixel of alteration instantly.</p>
+                    </div>
+
+                    <div class="feature-card gradient-4">
+                        <div class="icon-circle">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>
+                        </div>
+                        <h3>Cloud Storage Integration</h3>
+                        <p>Seamlessly scales from hundreds to millions of records securely within highly available systems.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. How It Works Section -->
+        <section class="how-it-works-section">
+             <div class="content-wrapper text-center">
+                <h2 class="section-title">How It Works</h2>
+                <div class="steps-container">
+                    <div class="step-item">
+                        <div class="step-circle bg-blue">
+                            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        </div>
+                        <h3>1. University Uploads</h3>
+                        <p>Authorized academic staff upload the original degree file along with strict student metadata.</p>
+                    </div>
+                    <div class="step-arrow">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle bg-purple">
+                            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                        </div>
+                        <h3>2. System Generates Hash</h3>
+                        <p>The system maps a unique SHA-256 footprint and commits it permanently to the central database.</p>
+                    </div>
+                    <div class="step-arrow">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-circle bg-cyan">
+                            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        </div>
+                        <h3>3. Company Verifies</h3>
+                        <p>Employers provide the candidate's PDF and instantly verify exact cryptographic matches.</p>
+                    </div>
+                </div>
+             </div>
+        </section>
+    </main>
+
+    <!-- 5. Professional Footer -->
+    <footer id="contact" class="footer">
+        <div class="content-wrapper footer-container">
+            <div class="footer-brand">
+                <div class="logo">
+                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                    </svg>
+                    <span class="logo-text" style="color: #fff; font-size: 1.25rem;">Academic Credential Verification</span>
+                </div>
+                <p class="footer-desc">A highly secure, robust platform built to eliminate academic identity fraud globally using modern cryptographic verification techniques.</p>
+            </div>
+            <div class="footer-links">
+                <div class="footer-col">
+                    <h4>Platform Access</h4>
+                    <ul>
+                        <li><a href="/employer">Employer Verification</a></li>
+                        <li><a href="/university/login">University Core Login</a></li>
+                        <li><a href="/admin/login">System Administration</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Project Details</h4>
+                    <ul>
+                        <li><span style="color: #94a3b8;">Final Year Research Project</span></li>
+                        <li><span style="color: #94a3b8;">Built with Next-Gen Flask APIs</span></li>
+                        <li><span style="color: #94a3b8;">Modern Web UI/UX Architecture</span></li>
+                    </ul>
+                </div>
+            </div>
         </div>
-    </div>
-    
-    <!-- Secret Admin link, separated from main UX flows -->
-    <div style="margin-top: 40px; font-size: 0.85rem;">
-        <a href="/admin/login" style="color: var(--text-muted); text-decoration: underline;">Open Systems Administrator Interface</a>
-    </div>
-</div>
-{% endblock %}
+        <div class="copyright">
+            <p>&copy; 2026 Academic Credential Verification System. All rights reserved worldwide.</p>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,45 +1,120 @@
-{% set site_name = "🏛️ University Portal" %}
-{% set home_url = "/university/upload" %}
 {% extends 'layout.html' %}
 
 {% block content %}
-<div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 10px;">
-        <h2 style="margin-bottom: 0;">University Issuance Form</h2>
-        <span style="font-size: 0.85rem; color: #93c5fd; background: rgba(59, 130, 246, 0.2); padding: 6px 14px; border-radius: 20px; font-weight: 500;">👤 Admin: {{ username }}</span>
+<div class="mb-4">
+    <h2 class="section-title" style="font-size: 2rem;">Academics Dashboard</h2>
+    <p class="section-subtitle" style="margin-left: 0; margin-bottom: 20px;">Manage, issue, and overview your university's cryptographic certificates.</p>
+</div>
+
+<div class="dashboard-cards-grid">
+    <div class="dashboard-card gradient-1">
+        <h3>Secure Issuance</h3>
+        <p>Index student credentials securely using authorized digital hashing signatures.</p>
     </div>
-    <p style="margin-top: 15px;">Issue a new certificate. A SHA-256 fingerprint will be generated and stored on the immutable ledger.</p>
+    <div class="dashboard-card gradient-2">
+        <h3>Immutable Records</h3>
+        <p>Every upload is permanently tracked and cryptographically protected.</p>
+    </div>
+    <div class="dashboard-card gradient-4">
+        <h3>Active Registry</h3>
+        <p>Directly interfacing with the centralized ACVS verification ledger.</p>
+    </div>
+</div>
+
+<div class="card xl">
+    <div class="flex-between mb-4">
+        <h3>Issue New Certificate</h3>
+        <span class="badge-pill">SHA-256 Protocol Active</span>
+    </div>
     
     <form method="POST" enctype="multipart/form-data">
-        <div class="form-group">
-            <label for="student_name">Student Full Name</label>
-            <input type="text" id="student_name" name="student_name" placeholder="E.g. Jane Doe" required>
+        <div class="grid">
+            <div class="form-group">
+                <label for="student_name">Student Full Name</label>
+                <input type="text" id="student_name" name="student_name" placeholder="E.g. Jane Doe" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="department">Department</label>
+                <select id="department" name="department" required>
+                    <option value="" disabled selected>Select Department...</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept.name }}">{{ dept.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <div class="grid" style="margin-top: 0;">
+            <div class="form-group">
+                <label for="register_number">Register Number</label>
+                <input type="text" id="register_number" name="register_number" placeholder="E.g. 19CS1001" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="passed_out_year">Passed Out Year</label>
+                <select id="passed_out_year" name="passed_out_year" required>
+                    <option value="" disabled selected>Select Year...</option>
+                    <option value="2020">2020</option>
+                    <option value="2021">2021</option>
+                    <option value="2022">2022</option>
+                    <option value="2023">2023</option>
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                </select>
+            </div>
         </div>
         
         <div class="form-group">
-            <label for="certificate">Certificate Document (PDF / DOC)</label>
+            <label for="certificate_type">Certificate Type</label>
+            <select id="certificate_type" name="certificate_type" required>
+                <option value="" disabled selected>Select Certificate Type...</option>
+                <option value="Degree Certificate">Degree Certificate</option>
+                <option value="Provisional Certificate">Provisional Certificate</option>
+                <option value="Consolidated Marksheet">Consolidated Marksheet</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="certificate">Certificate Document (PDF / DOC / JPG)</label>
             <input type="file" id="certificate" name="certificate" required>
         </div>
         
-        <button type="submit" class="btn btn-blue">Issue & Hash Certificate</button>
+        <div class="mt-4" style="margin-top: 32px;">
+            <button type="submit" class="btn btn-primary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Issue & Hash Certificate</button>
+        </div>
     </form>
     
     {% if message %}
-        <div class="result-box result-success">
-            <strong>✅ Success!</strong><br><br>
-            {{ message }}
+        <div class="result-box result-success" style="padding: 24px; text-align: center;">
+            <h3 style="justify-content: center;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                Issuance Successful
+            </h3>
+            <span style="font-size: 1.1rem; display: block; margin-top: 8px;">{{ message }}</span>
+            
+            {% if new_qr %}
+            <div style="margin-top: 24px; padding-top: 24px; border-top: 1px dashed #a7f3d0;">
+                <p style="font-size: 1rem; color: #064e3b; margin-bottom: 20px;"><strong>Student:</strong> {{ student_name }} | <strong>Dept:</strong> {{ department }} ({{ passed_out_year }})</p>
+                <img src="{{ url_for('static', filename=new_qr) }}" alt="QR Code" style="width: 200px; height: 200px; border-radius: 12px; border: 3px solid #10b981; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.2); display: block; margin: 0 auto 20px;">
+                <a href="{{ url_for('static', filename=new_qr) }}" download="ACVS_{{ new_cert_id }}_QR.png" class="btn btn-primary-gradient" style="text-decoration: none; padding: 12px 24px; gap: 8px;">
+                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download QR Code
+                </a>
+            </div>
+            {% endif %}
         </div>
     {% endif %}
     {% if error %}
         <div class="result-box result-error">
-            <strong>❌ Issuance Error</strong><br><br>
-            {{ error }}
+            <h3>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                Issuance Error
+            </h3>
+            <span>{{ error }}</span>
         </div>
     {% endif %}
-    
-    <div style="margin-top: 30px;">
-        <a href="/university/upload" class="btn btn-back" style="margin-right: 15px;">⟳ Upload Next</a>
-        <a href="/university/logout" class="btn btn-back" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">⏏ Logout Session</a>
-    </div>
 </div>
 {% endblock %}

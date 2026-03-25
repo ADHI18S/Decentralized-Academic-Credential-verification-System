@@ -1,40 +1,211 @@
-{% set site_name = "🏢 Employer Verification" %}
-{% set home_url = "/employer" %}
-{% extends 'layout.html' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Certificate Verification Portal</title>
+    <!-- Dedicated CSS for Verification Page matching Commercial Home Theme -->
+    <link href="{{ url_for('static', filename='verify.css') }}" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navbar (Matches Home Page) -->
+    <nav class="navbar">
+        <div class="content-wrapper nav-container">
+            <a href="/" class="logo">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="url(#logoGradient)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <defs>
+                        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#3b82f6" />
+                            <stop offset="100%" stop-color="#8b5cf6" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                    <path d="M2 17l10 5 10-5"></path>
+                    <path d="M2 12l10 5 10-5"></path>
+                </svg>
+                <span class="logo-text">Academic Credential Verification System</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/university/login">University Login</a></li>
+                <li><a href="/employer" style="color: #3b82f6; font-weight: 700;">Verify Certificate</a></li>
+            </ul>
+        </div>
+    </nav>
 
-{% block content %}
-<div class="card">
-    <h2>Employer Verification Portal</h2>
-    <p>Upload a candidate's certificate. The system will independently run the SHA-256 algorithm and match it against the immutable ledger.</p>
-    
-    <form method="POST" enctype="multipart/form-data">
-        <div class="form-group">
-            <label for="certificate">Upload Candidate Certificate</label>
-            <input type="file" id="certificate" name="certificate" required>
+    <main class="verify-page">
+        <div class="content-wrapper">
+            <div class="verify-card mx-auto">
+                <h2 class="verify-title">Academic Certificate Verification Portal</h2>
+                <p class="verify-desc">Enter the certificate ID and securely upload the original document to verify its authenticity instantly.</p>
+
+                <!-- Loading Animation State (Hidden by default) -->
+                <div id="loading-state" class="loading-container" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Verifying certificate... Please wait</p>
+                </div>
+
+                <!-- Green Valid Result -->
+                {% if valid_message %}
+                <div class="result-card valid-card">
+                    <div class="result-header">
+                        <div class="icon-circle green">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        </div>
+                        <h3>Certificate Status: VERIFIED</h3>
+                    </div>
+                    <div class="result-details">
+                        <div class="detail-row"><span>Student Name</span> <strong>{{ cert.student_name }}</strong></div>
+                        <div class="detail-row"><span>Register Number</span> <strong>{{ cert.register_number }}</strong></div>
+                        <div class="detail-row"><span>Department</span> <strong>{{ cert.department }}</strong></div>
+                        <div class="detail-row"><span>Passed Out Year</span> <strong>{{ cert.passed_out_year }}</strong></div>
+                        <div class="detail-row"><span>University Name</span> <strong>ACVS Authenticated Institution</strong></div>
+                        <div class="detail-row"><span>Certificate ID / Hash</span> <strong style="font-size: 0.85rem; max-width: 60%; word-break: break-all;">{{ cert.file_hash }}</strong></div>
+                    </div>
+                    <div style="margin-top: 32px; text-align: center;">
+                         <a href="/employer" class="btn btn-primary-gradient w-full">Verify Another Certificate</a>
+                    </div>
+                </div>
+                
+                <!-- Red Invalid Result -->
+                {% elif fake_message %}
+                <div class="result-card invalid-card">
+                    <div class="result-header">
+                        <div class="icon-circle red">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                        </div>
+                        <h3>Certificate Status: NOT VALID</h3>
+                    </div>
+                    <p class="error-msg">Message: This certificate is not found in the university database or it has been tampered with. Please reject this document.</p>
+                    <div style="margin-top: 32px; text-align: center;">
+                         <a href="/employer" class="btn btn-danger-outline w-full">Try Another Document</a>
+                    </div>
+                </div>
+                
+                <!-- Default Input Form -->
+                {% else %}
+                <form id="verification-form" method="POST" enctype="multipart/form-data" onsubmit="showLoading()">
+                    <div class="form-group" style="position: relative;">
+                        <label for="cert_id">Certificate ID (Scan or Upload QR Image)</label>
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                            <input type="text" id="cert_id" name="cert_id" placeholder="E.g. ACVS-2024-9812" style="flex: 1; min-width: 200px;">
+                            <button type="button" class="btn btn-secondary-outline" id="scan-btn" onclick="startScanner()" style="padding: 12px 20px; white-space: nowrap;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg> Camera
+                            </button>
+                            <button type="button" class="btn btn-secondary-outline" onclick="document.getElementById('qr-upload-input').click()" style="padding: 12px 20px; white-space: nowrap;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Upload QR
+                            </button>
+                            <input type="file" id="qr-upload-input" accept="image/*" style="display: none;" onchange="handleQrUpload(event)">
+                        </div>
+                    </div>
+                    
+                    <div id="qr-reader" style="width: 100%; border-radius: 12px; overflow: hidden; display: none; margin-bottom: 24px; border: 2px solid #e2e8f0;"></div>
+                    <button type="button" class="btn btn-danger-outline w-full mb-4" id="stop-scan-btn" onclick="stopScanner()" style="display: none;">Stop Camera Scanner</button>
+
+                    <div style="text-align: center; margin: 20px 0; color: var(--text-secondary); font-weight: 600;">OR</div>
+
+                    <div class="form-group">
+                        <label for="certificate">Original Certificate Document (Required File)</label>
+                        <div class="file-upload-wrapper">
+                            <input type="file" id="certificate" name="certificate">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary-gradient w-full mt-2">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> 
+                        Verify Document
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+
+            <!-- How Verification Works mini section -->
+            <div class="how-it-works-mini">
+                <h3 class="text-center">How Verification Works</h3>
+                <div class="mini-steps">
+                    <div class="mini-step">
+                        <div class="step-num bg-blue">1</div>
+                        <p>University uploads certificate</p>
+                    </div>
+                    <div class="mini-step arrow-flex">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="desktop-arrow" stroke="#cbd5e1" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                    </div>
+                    <div class="mini-step">
+                        <div class="step-num bg-purple">2</div>
+                        <p>System stores securely</p>
+                    </div>
+                    <div class="mini-step arrow-flex">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="desktop-arrow" stroke="#cbd5e1" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                    </div>
+                    <div class="mini-step">
+                        <div class="step-num bg-cyan">3</div>
+                        <p>Company verifies instantly</p>
+                    </div>
+                </div>
+            </div>
         </div>
-        
-        <button type="submit" class="btn btn-green">Verify Authenticity</button>
-    </form>
-    
-    {% if valid_message %}
-        <div class="result-box result-success">
-            <h2>✅ VALID</h2>
-            This is an authentic certificate belonging to <strong>{{ student_name }}</strong>.<br>
-            The hash perfectly matches the ledger. No tampering detected.
-        </div>
-    {% endif %}
-    
-    {% if fake_message %}
-        <div class="result-box result-error">
-            <h2>❌ FAKE DETECTED</h2>
-            This certificate has been altered, forged, or does not exist in our system.<br>
-            The hash generated from this file is unknown.
-        </div>
-    {% endif %}
-    
-    <div style="margin-top: 30px;">
-        <a href="/employer" class="btn btn-back">⟳ Try Another Certificate</a>
-        <a href="/" class="btn btn-back" style="margin-left: 10px;">← Main App Directory</a>
-    </div>
-</div>
-{% endblock %}
+    </main>
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script>
+        function showLoading() {
+            document.getElementById('verification-form').style.display = 'none';
+            document.getElementById('loading-state').style.display = 'flex';
+        }
+
+        let html5QrcodeScanner = null;
+        function startScanner() {
+            document.getElementById('qr-reader').style.display = 'block';
+            document.getElementById('scan-btn').style.display = 'none';
+            document.getElementById('stop-scan-btn').style.display = 'inline-flex';
+            
+            html5QrcodeScanner = new Html5Qrcode("qr-reader");
+            html5QrcodeScanner.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                (decodedText, decodedResult) => {
+                    document.getElementById('cert_id').value = decodedText;
+                    stopScanner();
+                    showLoading();
+                    document.getElementById('verification-form').submit();
+                },
+                (errorMessage) => {
+                    // Scanning...
+                }
+            ).catch(err => {
+                alert("Could not start camera. Please securely allow camera permissions or utilize a manual certificate upload.");
+                stopScanner();
+            });
+        }
+
+        function stopScanner() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => {
+                    document.getElementById('qr-reader').style.display = 'none';
+                    document.getElementById('scan-btn').style.display = 'inline-flex';
+                    document.getElementById('stop-scan-btn').style.display = 'none';
+                    html5QrcodeScanner = null;
+                }).catch(err => console.log(err));
+            }
+        }
+
+        function handleQrUpload(event) {
+            if (event.target.files.length === 0) return;
+            const file = event.target.files[0];
+            const reader = new Html5Qrcode("qr-reader");
+            
+            reader.scanFile(file, false)
+                .then(decodedText => {
+                    document.getElementById('cert_id').value = decodedText;
+                    document.getElementById('qr-upload-input').value = ""; // clear
+                    showLoading();
+                    document.getElementById('verification-form').submit();
+                })
+                .catch(err => {
+                    document.getElementById('qr-upload-input').value = ""; // clear
+                    alert("Could not extract a valid QR code from this image. Please ensure the image is clear and not blurry.");
+                });
+        }
+    </script>
+</body>
+</html>

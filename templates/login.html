@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block content %}
-<div class="card" style="max-width: 450px; margin: 0 auto;">
+<div class="card mx-auto">
     <h2>{{ portal }}</h2>
     <p>Please enter your credentials to proceed.</p>
     
@@ -16,17 +16,17 @@
             <input type="password" id="password" name="password" placeholder="Enter password" required>
         </div>
         
-        <button type="submit" class="btn btn-blue">Secure Login</button>
+        <button type="submit" class="btn btn-primary">Sign In</button>
     </form>
     
     {% if error %}
-        <div class="result-box result-error" style="padding: 15px; margin-top: 20px;">
+        <div class="result-box result-error mt-4">
             {{ error }}
         </div>
     {% endif %}
     
-    <div style="margin-top: 20px;">
-        <a href="/" class="btn btn-back">← Back to Main Menu</a>
+    <div class="mt-4" style="text-align: center;">
+        <a href="/" class="btn btn-outline btn-auto">← Back to Dashboard</a>
     </div>
 </div>
 {% endblock %}
