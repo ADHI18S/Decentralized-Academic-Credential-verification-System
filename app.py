@@ -3,8 +3,13 @@ import hashlib
 import sqlite3
 import uuid
 import qrcode
-from flask import Flask, render_template, request, session, redirect, url_for
+import pandas as pd
+import zipfile
+import shutil
+import smtplib
+from email.message import EmailMessage
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask import Flask, render_template, request, session, redirect, url_for
 
 app = Flask(__name__)
 # Secret key is required by Flask to encrypt session cookies
@@ -39,9 +44,17 @@ def init_db():
             certificate_type TEXT,
             file_hash TEXT UNIQUE,
             certificate_id TEXT,
-            qr_code_path TEXT
+            qr_code_path TEXT,
+            email_id TEXT
         )
     ''')
+    
+    # Safely add email_id to existing table if it doesn't exist
+    try:
+        cursor.execute("ALTER TABLE certificates ADD COLUMN email_id TEXT")
+    except sqlite3.OperationalError:
+        pass # Column might already exist
+        
     # Table for Departments
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS departments (
@@ -62,6 +75,47 @@ def init_db():
 
 # Run database setup when app starts
 init_db()
+
+# --- Email Feature ---
+def send_student_email(student_name, email_id, cert_id, qr_path):
+    """
+    Sends an automated email to the student with their certificate details and QR code.
+    This works locally by printing to the console but can be fully enabled with an SMTP server.
+    """
+    try:
+        msg = EmailMessage()
+        msg['Subject'] = 'Your Academic Certificate is Uploaded'
+        msg['From'] = "credentialsystem2026@gmail.com"  # e.g., using Gmail
+        msg['To'] = email_id
+        
+        content = f"Dear {student_name},\n\nyour academic certificate has been successfully uploaded by the university. You can verify it using the QR code attached in this email.\n\nCertificate ID: {cert_id}\nVerification Link: http://localhost:5000/employer"
+        msg.set_content(content)
+        
+        # Attach QR code image
+        qr_full_path = os.path.join(app.root_path, 'static', qr_path)
+        if os.path.exists(qr_full_path):
+            with open(qr_full_path, 'rb') as f:
+                img_data = f.read()
+            msg.add_attachment(img_data, maintype='image', subtype='png', filename=f'{cert_id}_QR.png')
+            
+        # SMTP Configuration Block
+        sender_email = "credentialsystem2026@gmail.com"  # e.g., using Gmail
+        sender_password = "czpbsqhzydkhbzgc"            # Needs an App Password for Gmail (No spaces)
+        
+        # To enable real sending, replace 'your_university_email@gmail.com'
+        if sender_email != "your_university_email@gmail.com" and '@' in sender_email:
+            server = smtplib.SMTP('smtp.gmail.com', 587)
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.send_message(msg)
+            server.quit()
+        else:
+            # Fallback mock for testing without real credentials
+            print(f"--- MOCK EMAIL SENT TO {email_id} ---")
+            print(content)
+            
+    except Exception as e:
+        print(f"Error sending email to {email_id}:", e)
 
 # --- Hash Generation ---
 def generate_hash(file_data):
@@ -147,54 +201,185 @@ def university_upload():
     conn.close()
         
     if request.method == 'POST':
-        student_name = request.form['student_name']
-        department = request.form['department']
-        register_number = request.form['register_number']
-        passed_out_year = request.form['passed_out_year']
-        certificate_type = request.form['certificate_type']
-        file = request.files['certificate']
+        upload_type = request.form.get('upload_type', 'single')
         
-        if file:
-            file_data = file.read()
+        if upload_type == 'single':
+            student_name = request.form['student_name']
+            department = request.form['department']
+            register_number = request.form['register_number']
+            passed_out_year = request.form['passed_out_year']
+            certificate_type = request.form['certificate_type']
+            email_id = request.form.get('email_id', '')
+            file = request.files['certificate']
             
-            # Save file locally
-            file_path = os.path.join(UPLOAD_FOLDER, file.filename)
-            with open(file_path, 'wb') as f:
-                f.write(file_data)
-            
-            # Generate SHA-256 Hash
-            file_hash = generate_hash(file_data)
-            
-            # Generate Certificate ID and QR Code payload
-            cert_id = f"ACVS-{passed_out_year}-{uuid.uuid4().hex[:6].upper()}"
-            qr_folder = os.path.join(app.root_path, 'static', 'qrcodes')
-            os.makedirs(qr_folder, exist_ok=True)
-            qr_filename = f"{cert_id}.png"
-            qr_path = os.path.join(qr_folder, qr_filename)
-            
-            qr = qrcode.QRCode(version=1, box_size=10, border=4)
-            qr.add_data(cert_id)
-            qr.make(fit=True)
-            img = qr.make_image(fill_color="black", back_color="white")
-            img.save(qr_path)
-            
-            db_qr_path = f"qrcodes/{qr_filename}"
-            
-            try:
-                conn = get_db_connection()
-                conn.execute(
-                    "INSERT INTO certificates (student_name, department, register_number, passed_out_year, certificate_type, file_hash, certificate_id, qr_code_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                    (student_name, department, register_number, passed_out_year, certificate_type, file_hash, cert_id, db_qr_path)
-                )
-                conn.commit()
-                msg = f"Certificate for {student_name} uploaded successfully! ID: {cert_id}"
-                conn.close()
-                return render_template('upload.html', message=msg, username=session.get('uni_username'), departments=departments, new_qr=db_qr_path, new_cert_id=cert_id, student_name=student_name, department=department, register_number=register_number, passed_out_year=passed_out_year)
-            except sqlite3.IntegrityError:
-                conn.close()
-                err = "This exact certificate was already uploaded! Duplicate hashes are not allowed."
-                return render_template('upload.html', error=err, username=session.get('uni_username'), departments=departments)
+            if file:
+                file_data = file.read()
                 
+                # Save file locally department-wise
+                # PassedOutYear -> Department -> RegisterNumber.pdf (or file.filename)
+                final_dir = os.path.join(UPLOAD_FOLDER, passed_out_year, department)
+                os.makedirs(final_dir, exist_ok=True)
+                file_extension = os.path.splitext(file.filename)[1]
+                file_path = os.path.join(final_dir, f"{register_number}{file_extension}")
+                
+                with open(file_path, 'wb') as f:
+                    f.write(file_data)
+                
+                # Generate SHA-256 Hash
+                file_hash = generate_hash(file_data)
+                
+                # Generate Certificate ID and QR Code payload
+                cert_id = f"ACVS-{passed_out_year}-{uuid.uuid4().hex[:6].upper()}"
+                qr_folder = os.path.join(app.root_path, 'static', 'qrcodes')
+                os.makedirs(qr_folder, exist_ok=True)
+                qr_filename = f"{cert_id}.png"
+                qr_path = os.path.join(qr_folder, qr_filename)
+                
+                qr = qrcode.QRCode(version=1, box_size=10, border=4)
+                qr.add_data(cert_id)
+                qr.make(fit=True)
+                img = qr.make_image(fill_color="black", back_color="white")
+                img.save(qr_path)
+                
+                db_qr_path = f"qrcodes/{qr_filename}"
+                
+                try:
+                    conn = get_db_connection()
+                    conn.execute(
+                        "INSERT INTO certificates (student_name, department, register_number, passed_out_year, certificate_type, file_hash, certificate_id, qr_code_path, email_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        (student_name, department, register_number, passed_out_year, certificate_type, file_hash, cert_id, db_qr_path, email_id)
+                    )
+                    conn.commit()
+                    conn.close()
+                    msg = f"Certificate for {student_name} uploaded successfully! ID: {cert_id}"
+                    
+                    # Send Student Email Notification
+                    if '@' in email_id and '.' in email_id:
+                        send_student_email(student_name, email_id, cert_id, db_qr_path)
+                        
+                    return render_template('upload.html', message=msg, username=session.get('uni_username'), departments=departments, new_qr=db_qr_path, new_cert_id=cert_id, student_name=student_name, department=department, register_number=register_number, passed_out_year=passed_out_year)
+                except sqlite3.IntegrityError:
+                    conn.close()
+                    err = "This exact certificate was already uploaded! Duplicate hashes are not allowed."
+                    return render_template('upload.html', error=err, username=session.get('uni_username'), departments=departments)
+
+        elif upload_type == 'bulk':
+            bulk_department = request.form.get('bulk_department')
+            excel_file = request.files.get('excel_file')
+            zip_file = request.files.get('zip_file')
+            
+            stats = {'total': 0, 'success': 0, 'emails_sent': 0, 'missing_certs': 0, 'invalid_emails': 0}
+            
+            if excel_file and zip_file and bulk_department:
+                # 1. Provide a temporary extraction location for the ZIP
+                temp_extract_dir = os.path.join(UPLOAD_FOLDER, 'temp_zip_' + uuid.uuid4().hex[:8])
+                os.makedirs(temp_extract_dir, exist_ok=True)
+                
+                try:
+                    with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+                        # Extract effectively flat, removing folders inside the zip
+                        for member in zip_ref.namelist():
+                            filename = os.path.basename(member)
+                            if not filename:
+                                continue
+                            source = zip_ref.open(member)
+                            target = open(os.path.join(temp_extract_dir, filename), "wb")
+                            with source, target:
+                                shutil.copyfileobj(source, target)
+                except Exception as e:
+                    return render_template('upload.html', error="Invalid or missing ZIP file.", username=session.get('uni_username'), departments=departments)
+                
+                # Read unzipped files mapping (lowercase reg no check)
+                unzipped_files = {f.lower(): f for f in os.listdir(temp_extract_dir) if f.lower().endswith('.pdf')}
+                
+                try:
+                    df = pd.read_excel(excel_file)
+                except Exception as e:
+                    shutil.rmtree(temp_extract_dir, ignore_errors=True)
+                    return render_template('upload.html', error="Invalid Excel file. Please ensure it's an .xlsx file.", username=session.get('uni_username'), departments=departments)
+                
+                required_cols = ['Student Name', 'Register Number', 'Department', 'Passed Out Year', 'Certificate ID', 'Student Email ID']
+                actual_cols = [str(c).strip() for c in df.columns]
+                missing_cols = [c for c in required_cols if c not in actual_cols]
+                
+                if missing_cols:
+                    shutil.rmtree(temp_extract_dir, ignore_errors=True)
+                    return render_template('upload.html', error=f"Excel is missing required columns: {', '.join(missing_cols)}", username=session.get('uni_username'), departments=departments)
+                
+                stats['total'] = len(df)
+                
+                for index, row in df.iterrows():
+                    student_name = str(row['Student Name']).strip()
+                    reg_no = str(row['Register Number']).strip()
+                    row_dept = str(row['Department']).strip() # Can fallback to this or bulk_department
+                    passed_year = str(row['Passed Out Year']).strip()
+                    cert_id = str(row['Certificate ID']).strip()
+                    email_id = str(row['Student Email ID']).strip()
+                    
+                    if cert_id.lower() == 'nan' or not cert_id:
+                        cert_id = f"ACVS-{passed_year}-{uuid.uuid4().hex[:6].upper()}"
+                        
+                    is_email_valid = '@' in email_id and '.' in email_id
+                    if not is_email_valid:
+                        stats['invalid_emails'] += 1
+                        
+                    expected_pdf = f"{reg_no.lower()}.pdf"
+                    if expected_pdf not in unzipped_files:
+                        stats['missing_certs'] += 1
+                        continue
+                        
+                    matched_file = unzipped_files[expected_pdf]
+                    source_path = os.path.join(temp_extract_dir, matched_file)
+                    
+                    # Store passed_out_year -> department -> register_number.pdf
+                    final_dir = os.path.join(UPLOAD_FOLDER, passed_year, bulk_department)
+                    os.makedirs(final_dir, exist_ok=True)
+                    final_path = os.path.join(final_dir, f"{reg_no}.pdf")
+                    
+                    try:
+                        shutil.move(source_path, final_path)
+                    except Exception:
+                        continue # Fallback for IO issues
+                        
+                    with open(final_path, 'rb') as f:
+                        file_data = f.read()
+                    file_hash = generate_hash(file_data)
+                    
+                    # Generate QR Code
+                    qr_folder = os.path.join(app.root_path, 'static', 'qrcodes')
+                    os.makedirs(qr_folder, exist_ok=True)
+                    qr_filename = f"{cert_id}.png"
+                    qr_path = os.path.join(qr_folder, qr_filename)
+                    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+                    qr.add_data(cert_id)
+                    qr.make(fit=True)
+                    img = qr.make_image(fill_color="black", back_color="white")
+                    img.save(qr_path)
+                    db_qr_path = f"qrcodes/{qr_filename}"
+                    
+                    try:
+                        conn = get_db_connection()
+                        conn.execute(
+                            "INSERT INTO certificates (student_name, department, register_number, passed_out_year, certificate_type, file_hash, certificate_id, qr_code_path, email_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                            (student_name, bulk_department, reg_no, passed_year, "Bulk Document", file_hash, cert_id, db_qr_path, email_id)
+                        )
+                        conn.commit()
+                        conn.close()
+                        
+                        stats['success'] += 1
+                        
+                        if is_email_valid:
+                            send_student_email(student_name, email_id, cert_id, db_qr_path)
+                            stats['emails_sent'] += 1
+                    except sqlite3.IntegrityError:
+                        conn.close()
+                        # Allow duplicate uploads to fail gracefully without crashing batch
+                        continue
+                        
+                # Cleanup any remaining files in temp dir
+                shutil.rmtree(temp_extract_dir, ignore_errors=True)
+                return render_template('upload.html', bulk_stats=stats, username=session.get('uni_username'), departments=departments)
+                    
     return render_template('upload.html', username=session.get('uni_username'), departments=departments)
 
 

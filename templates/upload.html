@@ -26,8 +26,17 @@
         <h3>Issue New Certificate</h3>
         <span class="badge-pill">SHA-256 Protocol Active</span>
     </div>
+
+    <!-- Toggle Buttons -->
+    <div style="margin-bottom: 24px; display: flex; gap: 12px;">
+        <button type="button" class="btn btn-primary" id="btn-single" onclick="toggleUpload('single')">Single Upload</button>
+        <button type="button" class="btn btn-outline" id="btn-bulk" onclick="toggleUpload('bulk')" style="border: 1px solid var(--border-color); background: transparent; color: var(--text-muted); cursor: pointer; padding: 10px 20px; border-radius: 8px; font-weight: 500;">Bulk Upload (Excel + ZIP)</button>
+    </div>
     
-    <form method="POST" enctype="multipart/form-data">
+    <!-- SINGLE UPLOAD FORM -->
+    <form method="POST" enctype="multipart/form-data" id="single-form">
+        <input type="hidden" name="upload_type" value="single">
+        
         <div class="grid">
             <div class="form-group">
                 <label for="student_name">Student Full Name</label>
@@ -67,6 +76,11 @@
                 </select>
             </div>
         </div>
+
+        <div class="form-group">
+            <label for="email_id">Student Email ID</label>
+            <input type="email" id="email_id" name="email_id" placeholder="E.g. student@example.com" required>
+        </div>
         
         <div class="form-group">
             <label for="certificate_type">Certificate Type</label>
@@ -84,17 +98,57 @@
         </div>
         
         <div class="mt-4" style="margin-top: 32px;">
-            <button type="submit" class="btn btn-primary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Issue & Hash Certificate</button>
+            <button type="submit" class="btn btn-primary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Issue & Hash Single Certificate</button>
+        </div>
+    </form>
+
+    <!-- BULK UPLOAD FORM -->
+    <form method="POST" enctype="multipart/form-data" id="bulk-form" style="display: none;">
+        <input type="hidden" name="upload_type" value="bulk">
+        
+        <div class="form-group" style="margin-bottom: 24px;">
+            <label for="bulk_department">Select Department for Bulk Upload</label>
+            <select id="bulk_department" name="bulk_department" required>
+                <option value="" disabled selected>Choose a Department...</option>
+                {% for dept in departments %}
+                <option value="{{ dept.name }}">{{ dept.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="grid">
+            <div class="form-group">
+                <label for="excel_file">Student Details (Excel File)</label>
+                <input type="file" id="excel_file" name="excel_file" accept=".xlsx, .xls" required>
+                <small style="color: var(--text-muted); display: block; margin-top: 8px;">
+                    Required Columns:<br>
+                    <strong>Student Name, Register Number, Department, Passed Out Year, Certificate ID, Student Email ID</strong>
+                </small>
+            </div>
+            
+            <div class="form-group">
+                <label for="zip_file">Certificates (ZIP File)</label>
+                <input type="file" id="zip_file" name="zip_file" accept=".zip" required>
+                <small style="color: var(--text-muted); display: block; margin-top: 8px;">
+                    Ensure the ZIP contains PDF files named strictly by Register Number (e.g., <strong>19CS1001.pdf</strong>).
+                </small>
+            </div>
+        </div>
+        
+        <div class="mt-4" style="margin-top: 32px;">
+            <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #4f46e5, #ec4899);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg> Process Bulk Upload</button>
         </div>
     </form>
     
+    <!-- SINGLE UPLOAD RESULTS -->
     {% if message %}
-        <div class="result-box result-success" style="padding: 24px; text-align: center;">
+        <div class="result-box result-success" style="padding: 24px; text-align: center; margin-top: 24px;">
             <h3 style="justify-content: center;">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
                 Issuance Successful
             </h3>
             <span style="font-size: 1.1rem; display: block; margin-top: 8px;">{{ message }}</span>
+            <p style="color: #064e3b; margin-top: 8px;">An email has been automatically sent to the student.</p>
             
             {% if new_qr %}
             <div style="margin-top: 24px; padding-top: 24px; border-top: 1px dashed #a7f3d0;">
@@ -107,8 +161,53 @@
             {% endif %}
         </div>
     {% endif %}
+    
+    <!-- BULK UPLOAD RESULTS -->
+    {% if bulk_stats %}
+        <div class="result-box result-success" style="padding: 24px; text-align: center; margin-top: 24px; background: rgba(16, 185, 129, 0.05); border: 1px solid #10b981;">
+            <h3 style="justify-content: center;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg>
+                Bulk Upload Summary
+            </h3>
+            
+            <div style="background: white; border-radius: 12px; padding: 20px; text-align: left; max-width: 400px; margin: 20px auto 0; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                <ul style="list-style-type: none; padding: 0; line-height: 2; margin: 0; font-size: 1.05rem;">
+                    <li style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+                        <span>Total students in Excel:</span> <strong style="color: #1e293b;">{{ bulk_stats.total }}</strong>
+                    </li>
+                    <li style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 8px 0;">
+                        <span>Certificates uploaded:</span> <strong style="color: #10b981;">{{ bulk_stats.success }}</strong>
+                    </li>
+                    <li style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 8px 0;">
+                        <span>Emails sent successfully:</span> <strong style="color: #3b82f6;">{{ bulk_stats.emails_sent }}</strong>
+                    </li>
+                    <li style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 8px 0;">
+                        <span>Missing certificates:</span> 
+                        {% if bulk_stats.missing_certs > 0 %}
+                        <strong style="color: #ef4444;">{{ bulk_stats.missing_certs }}</strong>
+                        {% else %}
+                        <strong style="color: #1e293b;">{{ bulk_stats.missing_certs }}</strong>
+                        {% endif %}
+                    </li>
+                    <li style="display: flex; justify-content: space-between; padding-top: 8px;">
+                        <span>Invalid email IDs:</span> 
+                        {% if bulk_stats.invalid_emails > 0 %}
+                        <strong style="color: #ef4444;">{{ bulk_stats.invalid_emails }}</strong>
+                        {% else %}
+                        <strong style="color: #1e293b;">{{ bulk_stats.invalid_emails }}</strong>
+                        {% endif %}
+                    </li>
+                </ul>
+            </div>
+            {% if bulk_stats.success > 0 %}
+                <p style="color: #064e3b; margin-top: 20px; font-weight: 500;">All successfully processed certificates have generated QR codes mapped securely!</p>
+            {% endif %}
+        </div>
+    {% endif %}
+    
+    <!-- ERROR MESSAGES -->
     {% if error %}
-        <div class="result-box result-error">
+        <div class="result-box result-error" style="margin-top: 24px;">
             <h3>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
                 Issuance Error
@@ -117,4 +216,38 @@
         </div>
     {% endif %}
 </div>
+
+<script>
+    function toggleUpload(type) {
+        const singleForm = document.getElementById('single-form');
+        const bulkForm = document.getElementById('bulk-form');
+        const btnSingle = document.getElementById('btn-single');
+        const btnBulk = document.getElementById('btn-bulk');
+        
+        if (type === 'single') {
+            singleForm.style.display = 'block';
+            bulkForm.style.display = 'none';
+            btnSingle.className = 'btn btn-primary';
+            btnSingle.style.cssText = '';
+            btnBulk.className = 'btn btn-outline';
+            btnBulk.style.cssText = 'border: 1px solid var(--border-color); background: transparent; color: var(--text-muted); cursor: pointer; padding: 10px 20px; border-radius: 8px; font-weight: 500;';
+        } else {
+            singleForm.style.display = 'none';
+            bulkForm.style.display = 'block';
+            btnBulk.className = 'btn btn-primary';
+            btnBulk.style.cssText = 'background: linear-gradient(135deg, #4f46e5, #ec4899); border: none;';
+            btnSingle.className = 'btn btn-outline';
+            btnSingle.style.cssText = 'border: 1px solid var(--border-color); background: transparent; color: var(--text-muted); cursor: pointer; padding: 10px 20px; border-radius: 8px; font-weight: 500;';
+        }
+    }
+    
+    // Maintain state if reloading page with a specific error or success
+    window.onload = function() {
+        // By default show single unless we can infer bulk was active
+        const forceBulk = "{{ 'true' if bulk_stats or (error and 'Excel' in error) else 'false' }}";
+        if (forceBulk === 'true') {
+            toggleUpload('bulk');
+        }
+    };
+</script>
 {% endblock %}

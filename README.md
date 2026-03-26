@@ -27,10 +27,13 @@ Universities automatically generate custom QR codes during student issuance cont
 
 ### 3. 💼 Three-Tier Role Isolation
 * **Master System Admin**: Controls the centralized ledger and has sole permission to grant access keys/accounts to authorized Universities globally.
-* **Authorized University Portal**: A highly-polished SaaS interface where departments can securely issue hashes into the database, generate unique Certificate IDs, view all past records, and generate/download direct QR codes.
+* **Authorized University Portal**: A highly-polished SaaS interface where departments can securely issue hashes into the database, generate unique Certificate IDs, view all past records, and generate/download direct QR codes. Features robust **Single & Bulk Upload mechanisms**, allowing complete department-wise storage mapping (automatically sorted by Passed Out Year & Department) using drag-and-drop Excel Data files & ZIP files.
 * **Open Employer Portal**: A public verification endpoint where any company can drag-and-drop a PDF or scan a QR code to verify candidate authenticity instantaneously.
 
-### 4. 🎨 Commercial Product UI/UX Architecture
+### 4. 📧 Automated Verification Emails (SMTP)
+The platform features an automated email pipeline leveraging `smtplib` and Google App Passwords. Once an academic entry successfully registers (either singularly or grouped via bulk Excel upload mapping), the system instantaneously pushes an email directly to the corresponding student containing their name, the Verification Link, and an Image Attachment of their generated QR Code—creating a seamless and zero-touch issuance lifecycle.
+
+### 5. 🎨 Commercial Product UI/UX Architecture
 Designed beyond the scope of traditional "Student Projects", the platform features premium UI paradigms including soft gradient transitions, glassmorphism navbars, intelligent hover states, contextual animated loading indicators, and dedicated responsive Grid/Flex layouts ensuring a mobile-first experience.
 
 ---
@@ -41,6 +44,7 @@ Designed beyond the scope of traditional "Student Projects", the platform featur
 *   **Python**: Core execution and mathematical processing.
 *   **Flask**: Lightweight web framework governing API routes, HTTP handling, and protected sessions.
 *   **SQLite3**: Persistent, serverless database mapping hashes, users, and department ledgers.
+*   **Pandas & OpenPyXL**: Intelligent memory-safe DataFrame extraction for batch processing `.xlsx` details mapped explicitly to `.zip` file payloads.
 *   **Werkzeug Security**: Advanced password and key hashing.
 
 **Frontend Interface:**
@@ -69,7 +73,7 @@ source venv/bin/activate  # On Windows, use: venv\Scripts\activate
 
 ### 3. Install required logic extensions
 ```bash
-pip install Flask werkzeug Pillow "qrcode[pil]"
+pip install Flask werkzeug Pillow "qrcode[pil]" pandas openpyxl
 ```
 *(Note: If you are forcing a global system installation on Linux, you may append `--break-system-packages`)*
 
