@@ -51,13 +51,40 @@
                     </div>
                 </div>
                 <div class="hero-illustration">
-                    <div class="illustration-card glow-blue">
-                        <div class="doc-header"></div>
-                        <div class="doc-line w-full"></div>
-                        <div class="doc-line w-3-4"></div>
-                        <div class="doc-line w-half"></div>
-                        <div class="doc-line w-full" style="margin-top: 20px;"></div>
-                        <div class="doc-line w-3-4"></div>
+                    <div class="illustration-card glow-blue" style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+                        <!-- Mini Univ Logo Placeholder -->
+                        <div style="width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); display: flex; align-items: center; justify-content: center; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(59,130,246,0.3);">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"></path></svg>
+                        </div>
+                        <h4 style="color: #0f172a; font-size: 1.1rem; margin-bottom: 4px; font-weight: 800;">Verified Credential</h4>
+                        <p style="color: #64748b; font-size: 0.8rem; margin-bottom: 25px; font-weight: 500;">Cryptographic Validation</p>
+                        
+                        <!-- Mockup QR Code Box with Laser Scan -->
+                        <div style="width: 110px; height: 110px; background: white; margin-bottom: 25px; border: 2px solid #e2e8f0; border-radius: 12px; padding: 6px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); position: relative; overflow: hidden;">
+                            <style>
+                                @keyframes scan { 0% { top: -10%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 110%; opacity: 0; } }
+                                .laser-scanner { position: absolute; left: 0; width: 100%; height: 3px; background: #22c55e; box-shadow: 0 0 8px 2px rgba(34, 197, 94, 0.4); animation: scan 2.5s infinite linear; z-index: 10; border-radius: 4px; }
+                            </style>
+                            <div class="laser-scanner"></div>
+                            
+                            <!-- Fake QR block pattern -->
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); gap: 4px; height: 100%;">
+                                <div style="background: #1e293b; border-radius: 4px; grid-column: span 2; grid-row: span 2;"></div>
+                                <div style="background: #3b82f6; border-radius: 2px;"></div>
+                                <div style="background: #1e293b; border-radius: 3px;"></div>
+                                <div style="background: #1e293b; border-radius: 2px;"></div>
+                                <div style="background: #3b82f6; border-radius: 4px; grid-row: span 2;"></div>
+                                <div style="background: #8b5cf6; border-radius: 3px; grid-column: span 2;"></div>
+                                <div style="background: #1e293b; border-radius: 4px; grid-column: span 2; grid-row: span 2;"></div>
+                                <div style="background: #3b82f6; border-radius: 2px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Hash Hex Text Mockup -->
+                        <div style="width: 100%; background: #f8fafc; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 0.65rem; color: #475569; letter-spacing: 0.05em; border: 1px dashed #cbd5e1; word-break: break-all;">
+                            SHA256: e3b0c442...996fb924
+                        </div>
+
                         <div class="shield-badge">
                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
